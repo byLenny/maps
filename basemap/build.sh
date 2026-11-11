@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Builds world-basemap.mbtiles: a rough, low-zoom (0-5) map of the whole planet from Natural Earth (public domain).
+# See ../basemap/README.md and ../NOTICE.md.
 #
-#   tools/basemap/build-world-basemap.sh [output-dir]      # default: tools/basemap/output
+#   basemap/build.sh [output-dir]      # default: basemap/output
 #
 # Needs curl and tippecanoe (https://github.com/felt/tippecanoe) on the PATH.
 #
@@ -10,7 +11,7 @@
 #   land        the land
 #   lakes       the big lakes
 #   boundaries  country borders on land
-# These are not the OpenMapTiles layers that region-detail.mbtiles uses (see tools/maps), so the map style has to know them.
+# These are not OpenMapTiles layers, so the Cockpit map style has to draw them by these names.
 set -euo pipefail
 
 OUT_DIR="${1:-$(cd "$(dirname "$0")" && pwd)/output}"

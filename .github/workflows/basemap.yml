@@ -1,6 +1,6 @@
-name: World basemap
+name: Basemap
 
-# Builds world-basemap.mbtiles, the rough world map the Cockpit app downloads at first start.
+# Builds world-basemap.mbtiles (see basemap/README.md) for the Cockpit app to download at first start.
 # Runs on every change to the build and when started by hand. The file is published as the asset of the
 # "basemap" release in this repository, which the app downloads from:
 #   https://github.com/byLenny/maps/releases/download/basemap/world-basemap.mbtiles
@@ -9,15 +9,15 @@ on:
   push:
     branches: [main]
     paths:
-      - .github/workflows/world-basemap.yml
-      - tools/basemap/**
+      - .github/workflows/basemap.yml
+      - basemap/**
   workflow_dispatch:
 
 permissions:
   contents: write
 
 concurrency:
-  group: world-basemap-${{ github.ref }}
+  group: basemap-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -36,11 +36,11 @@ jobs:
           sudo make -C "$RUNNER_TEMP/tippecanoe" install
 
       - name: Build the map
-        run: tools/basemap/build-world-basemap.sh
+        run: basemap/build.sh
 
       - name: Check the map
         run: |
-          FILE=tools/basemap/output/world-basemap.mbtiles
+          FILE=basemap/output/world-basemap.mbtiles
           {
             echo "### world-basemap.mbtiles"
             echo "Size: $(du -h "$FILE" | cut -f1) ($(stat -c %s "$FILE") bytes)"
@@ -57,14 +57,14 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: world-basemap
-          path: tools/basemap/output/world-basemap.mbtiles
+          path: basemap/output/world-basemap.mbtiles
           retention-days: 14
 
       - name: Publish as the basemap release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          FILE=tools/basemap/output/world-basemap.mbtiles
+          FILE=basemap/output/world-basemap.mbtiles
           if gh release view basemap --repo "${{ github.repository }}" > /dev/null 2>&1; then
             gh release upload basemap "$FILE" --clobber --repo "${{ github.repository }}"
           else
