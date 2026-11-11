@@ -1,0 +1,73 @@
+name: Detailed basemap
+
+# Builds world-detailed.pmtiles (see basemap-detailed/README.md) and publishes it to the basemap release.
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/basemap-detailed.yml
+      - basemap-detailed/**
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: basemap-detailed-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build the detailed basemap
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build tippecanoe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libsqlite3-dev zlib1g-dev sqlite3
+          git clone --depth 1 https://github.com/felt/tippecanoe.git "$RUNNER_TEMP/tippecanoe"
+          make -C "$RUNNER_TEMP/tippecanoe" -j"$(nproc)"
+          sudo make -C "$RUNNER_TEMP/tippecanoe" install
+
+      - name: Install the pmtiles tool
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/pmtiles"
+          gh release download --repo protomaps/go-pmtiles --pattern '*Linux_x86_64.tar.gz' --dir "$RUNNER_TEMP/pmtiles"
+          tar -xzf "$RUNNER_TEMP"/pmtiles/*.tar.gz -C "$RUNNER_TEMP/pmtiles"
+          sudo install "$RUNNER_TEMP/pmtiles/pmtiles" /usr/local/bin/pmtiles
+          pmtiles version
+
+      - name: Build the map
+        run: basemap-detailed/build.sh
+
+      - name: Check the map
+        run: |
+          FILE=basemap-detailed/output/world-detailed.pmtiles
+          {
+            echo "### world-detailed.pmtiles"
+            echo "Size: $(du -h "$FILE" | cut -f1) ($(stat -c %s "$FILE") bytes)"
+            pmtiles show "$FILE" | head -20
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          for layer in ocean land lakes boundaries roads places; do
+            pmtiles show --metadata "$FILE" | grep -q "\"$layer\"" \
+              || { echo "::error::layer $layer is missing"; exit 1; }
+          done
+
+      - name: Publish as the basemap release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FILE=basemap-detailed/output/world-detailed.pmtiles
+          if gh release view basemap --repo "${{ github.repository }}" > /dev/null 2>&1; then
+            gh release upload basemap "$FILE" --clobber --repo "${{ github.repository }}"
+          else
+            gh release create basemap "$FILE" \
+              --repo "${{ github.repository }}" \
+              --latest=false \
+              --title "World basemap" \
+              --notes "Rough world map (zoom 0-5) from Natural Earth, and the detailed world map (zoom 0-8, with roads and places). Public domain. Downloaded by the Cockpit app."
+          fi

@@ -7,9 +7,11 @@ at first start, which is why this repository must stay public: the app does not 
 
 | Path | What it is |
 | --- | --- |
-| [`basemap/`](basemap/README.md) | The world basemap: its build script and the tool that turns it into web tiles |
+| [`basemap/`](basemap/README.md) | The basic world map (zoom 0-5): its build script and the tool that turns it into web tiles |
+| [`basemap-detailed/`](basemap-detailed/README.md) | The detailed world map (zoom 0-8, with roads and places): its build script |
 | [`site/`](site/index.html) | The map page, published to GitHub Pages with the basemap's tiles |
-| [`.github/workflows/basemap.yml`](.github/workflows/basemap.yml) | Builds the basemap, publishes its release and deploys the page |
+| [`.github/workflows/basemap.yml`](.github/workflows/basemap.yml) | Builds the basic map, publishes its release and deploys the page |
+| [`.github/workflows/basemap-detailed.yml`](.github/workflows/basemap-detailed.yml) | Builds the detailed map and publishes it to the same release |
 | [`NOTICE.md`](NOTICE.md) | Data sources, licences and attribution |
 
 ## Published files
@@ -17,6 +19,7 @@ at first start, which is why this repository must stay public: the app does not 
 | File | Release | Download |
 | --- | --- | --- |
 | `world-basemap.mbtiles` | `basemap` | https://github.com/byLenny/maps/releases/download/basemap/world-basemap.mbtiles |
+| `world-detailed.pmtiles` | `basemap` | https://github.com/byLenny/maps/releases/download/basemap/world-detailed.pmtiles |
 
 Releases are not "latest", so a download link always names its release explicitly.
 
