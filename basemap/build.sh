@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds world-basemap.mbtiles: a rough, low-zoom (0-5) map of the whole planet from Natural Earth (public domain).
-# See ../basemap/README.md and ../NOTICE.md.
+# See README.md in this folder and ../NOTICE.md.
 #
 #   basemap/build.sh [output-dir]      # default: basemap/output
 #
