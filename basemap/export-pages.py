@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Unpacks an .mbtiles vector file into the static tree that GitHub Pages serves.
 
-    basemap/export-pages.py <file.mbtiles> <docs-dir>
+    basemap/export-pages.py <file.mbtiles> <site-dir>
 
-Writes <docs-dir>/tiles/<z>/<x>/<y>.pbf. The row is flipped from MBTiles (TMS) to the XYZ order the map uses, and tiles
+Writes <site-dir>/tiles/<z>/<x>/<y>.pbf. The row is flipped from MBTiles (TMS) to the XYZ order the map uses, and tiles
 stored compressed are gunzipped, because Pages does not send a Content-Encoding header. The tiles folder is replaced on
 each run, so tiles that left the source do not linger.
 """
@@ -14,8 +14,8 @@ import sqlite3
 import sys
 
 
-def main(source: str, docs: str) -> int:
-    tiles_dir = pathlib.Path(docs) / "tiles"
+def main(source: str, site: str) -> int:
+    tiles_dir = pathlib.Path(site) / "tiles"
     if tiles_dir.exists():
         shutil.rmtree(tiles_dir)
     count = 0

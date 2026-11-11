@@ -1,7 +1,7 @@
 name: Basemap
 
 # Builds world-basemap.mbtiles (see basemap/README.md) for the Cockpit app to download at first start, and
-# unpacks it into docs/tiles for the map page on GitHub Pages (https://bylenny.github.io/maps/).
+# deploys the map page in site/ to GitHub Pages (https://bylenny.github.io/maps/) with its tiles.
 # Runs on every change to the build and when started by hand. The file is published as the asset of the
 # "basemap" release in this repository, which the app downloads from:
 #   https://github.com/byLenny/maps/releases/download/basemap/world-basemap.mbtiles
@@ -16,6 +16,8 @@ on:
 
 permissions:
   contents: write
+  pages: write
+  id-token: write
 
 concurrency:
   group: basemap-${{ github.ref }}
@@ -23,7 +25,7 @@ concurrency:
 
 jobs:
   build:
-    name: Build the world basemap
+    name: Build the basemap and the map page
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -55,22 +57,11 @@ jobs:
               || { echo "::error::layer $layer is missing"; exit 1; }
           done
 
-      - name: Export the tiles for GitHub Pages
-        run: python3 basemap/export-pages.py basemap/output/world-basemap.mbtiles docs
-
-      - name: Commit the Pages tiles
-        if: github.ref == 'refs/heads/main'
+      - name: Assemble the Pages site
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs
-          if git diff --cached --quiet; then
-            echo "The Pages tiles did not change."
-          else
-            git commit -qm "Update the Pages map tiles from the basemap build"
-            git pull -q --rebase origin main
-            git push -q origin HEAD:main
-          fi
+          rm -rf _site && mkdir _site
+          cp -r site/. _site/
+          basemap/export-pages.py basemap/output/world-basemap.mbtiles _site
 
       - uses: actions/upload-artifact@v4
         with:
@@ -78,7 +69,12 @@ jobs:
           path: basemap/output/world-basemap.mbtiles
           retention-days: 14
 
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
       - name: Publish as the basemap release
+        if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -92,3 +88,16 @@ jobs:
               --title "World basemap" \
               --notes "Rough world map (zoom 0-5) from Natural Earth, public domain. Downloaded by the Cockpit app at first start."
           fi
+
+  deploy:
+    name: Deploy the map page
+    if: github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

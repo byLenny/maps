@@ -7,8 +7,9 @@ at first start, which is why this repository must stay public: the app does not 
 
 | Path | What it is |
 | --- | --- |
-| [`basemap/`](basemap/README.md) | The world basemap: how it is built and published |
-| [`.github/workflows/basemap.yml`](.github/workflows/basemap.yml) | Builds the basemap and publishes it to the `basemap` release |
+| [`basemap/`](basemap/README.md) | The world basemap: its build script and the tool that turns it into web tiles |
+| [`site/`](site/index.html) | The map page, published to GitHub Pages with the basemap's tiles |
+| [`.github/workflows/basemap.yml`](.github/workflows/basemap.yml) | Builds the basemap, publishes its release and deploys the page |
 | [`NOTICE.md`](NOTICE.md) | Data sources, licences and attribution |
 
 ## Published files
@@ -19,7 +20,10 @@ at first start, which is why this repository must stay public: the app does not 
 
 Releases are not "latest", so a download link always names its release explicitly.
 
+The map page is at https://bylenny.github.io/maps/. It is deployed by the workflow, not kept in git.
+
 ## Adding a map
 
-Add a folder for it, with a README that gives its layers, zoom range, size and data source, a build script, and a
-workflow that publishes its file to its own release. Add its attribution to `NOTICE.md`.
+Add a folder under `basemap/`'s pattern for it, with a README that gives its layers, zoom range, size and data source,
+and a build script. Add its job to the workflow, which publishes its file to its own release. Add its attribution to
+`NOTICE.md`.
