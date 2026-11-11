@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Cockpit world basemap</title>
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet">
+  <style>
+    :root { color-scheme: light dark; }
+    html, body { margin: 0; height: 100%; font-family: system-ui, sans-serif; }
+    #map { position: absolute; inset: 0; }
+    .note { position: absolute; left: 12px; bottom: 12px; max-width: 420px; padding: 10px 12px; border-radius: 8px;
+            background: rgba(255,255,255,.9); color: #111; font-size: 13px; line-height: 1.4; }
+    @media (prefers-color-scheme: dark) { .note { background: rgba(20,20,20,.85); color: #eee; } }
+    .note a { color: inherit; }
+  </style>
+</head>
+<body>
+  <div id="map"></div>
+  <div class="note">
+    <strong>Cockpit world basemap</strong>, zoom 0 to 5, from
+    <a href="https://www.naturalearthdata.com/">Natural Earth</a> (public domain).
+    <a href="https://github.com/byLenny/maps">Source and download</a>.
+    <a href="https://github.com/byLenny/maps/releases/download/basemap/world-basemap.mbtiles">world-basemap.mbtiles</a>
+  </div>
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script>
+    // The tiles sit next to this page, wherever Pages serves it, so the absolute URL is built from the page itself.
+    const tiles = new URL('.', document.baseURI).href + 'tiles/{z}/{x}/{y}.pbf';
+    const map = new maplibregl.Map({
+      container: 'map',
+      center: [10, 20],
+      zoom: 1,
+      minZoom: 0,
+      maxZoom: 6,
+      style: {
+        version: 8,
+        sources: {
+          world: { type: 'vector', tiles: [tiles], minzoom: 0, maxzoom: 5, attribution: 'Natural Earth' }
+        },
+        layers: [
+          { id: 'background', type: 'background', paint: { 'background-color': '#1B2430' } },
+          { id: 'ocean', type: 'fill', source: 'world', 'source-layer': 'ocean', paint: { 'fill-color': '#0B5FA5' } },
+          { id: 'lakes', type: 'fill', source: 'world', 'source-layer': 'lakes', paint: { 'fill-color': '#0B5FA5' } },
+          { id: 'land', type: 'fill', source: 'world', 'source-layer': 'land', paint: { 'fill-color': '#2A3B2E' } },
+          { id: 'boundaries', type: 'line', source: 'world', 'source-layer': 'boundaries',
+            paint: { 'line-color': '#5A6270', 'line-width': 0.8 } }
+        ]
+      }
+    });
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+  </script>
+</body>
+</html>
