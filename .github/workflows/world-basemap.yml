@@ -1,0 +1,76 @@
+name: World basemap
+
+# Builds world-basemap.mbtiles, the rough world map the Cockpit app downloads at first start.
+# Runs on every change to the build and when started by hand. The file is published as the asset of the
+# "basemap" release in this repository, which the app downloads from:
+#   https://github.com/byLenny/maps/releases/download/basemap/world-basemap.mbtiles
+# The release is never marked "latest".
+on:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/world-basemap.yml
+      - tools/basemap/**
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: world-basemap-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build the world basemap
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build tippecanoe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libsqlite3-dev zlib1g-dev sqlite3
+          git clone --depth 1 https://github.com/felt/tippecanoe.git "$RUNNER_TEMP/tippecanoe"
+          make -C "$RUNNER_TEMP/tippecanoe" -j"$(nproc)"
+          sudo make -C "$RUNNER_TEMP/tippecanoe" install
+
+      - name: Build the map
+        run: tools/basemap/build-world-basemap.sh
+
+      - name: Check the map
+        run: |
+          FILE=tools/basemap/output/world-basemap.mbtiles
+          {
+            echo "### world-basemap.mbtiles"
+            echo "Size: $(du -h "$FILE" | cut -f1) ($(stat -c %s "$FILE") bytes)"
+            echo
+            echo "Layers: $(sqlite3 "$FILE" "SELECT value FROM metadata WHERE name='json';" | grep -o '"id":"[a-z_]*"' | tr '\n' ' ')"
+            echo "Tiles by zoom:"
+            sqlite3 "$FILE" "SELECT zoom_level || ': ' || count(*) FROM tiles GROUP BY zoom_level ORDER BY zoom_level;"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+          for layer in ocean land lakes boundaries; do
+            sqlite3 "$FILE" "SELECT value FROM metadata WHERE name='json';" | grep -q "\"id\":\"$layer\"" \
+              || { echo "::error::layer $layer is missing"; exit 1; }
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: world-basemap
+          path: tools/basemap/output/world-basemap.mbtiles
+          retention-days: 14
+
+      - name: Publish as the basemap release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          FILE=tools/basemap/output/world-basemap.mbtiles
+          if gh release view basemap --repo "${{ github.repository }}" > /dev/null 2>&1; then
+            gh release upload basemap "$FILE" --clobber --repo "${{ github.repository }}"
+          else
+            gh release create basemap "$FILE" \
+              --repo "${{ github.repository }}" \
+              --latest=false \
+              --title "World basemap" \
+              --notes "Rough world map (zoom 0-5) from Natural Earth, public domain. Downloaded by the Cockpit app at first start."
+          fi
